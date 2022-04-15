@@ -1,5 +1,6 @@
 import math
 
+mapper = {1: 9, 2: 8, 3: 7, 4: 6, 5: 5, 6:4, 7:3, 8:2, 9:1}
 
 class Vertex(object):
     def __init__(self, v, p, d, is_terminal):
@@ -17,23 +18,25 @@ class Vertex(object):
         self.is_terminal = is_terminal
 
 
-def findMax(vertexTab):
-    """Function gives index of vertex which has largest distance to starting vertex
+def findMin(vertexTab):
+    """Function gives index of vertex which has smallest distance to starting vertex
     and hasnt been visited already
 
     Args:
         vertexTab (list(Vertex)): list of Vertex objects
 
     Returns:
-        int: index of not visited vertex with largest distance or -1 if every vertex visited
+        int: index of not visited vertex with smallest distance or -1 if every vertex visited
     """
-    max = -1
-    max_distance = -math.inf
+    min = -1
+    min_distance = math.inf
     for vertex_nr in range(len(vertexTab)):
-        if ((not vertexTab[vertex_nr].visited) and vertexTab[vertex_nr].distance > max_distance):
-            max = vertex_nr
-            max_distance = vertexTab[vertex_nr].distance
-    return max
+        if (not vertexTab[vertex_nr].visited) and vertexTab[
+            vertex_nr
+        ].distance < min_distance:
+            min = vertex_nr
+            min_distance = vertexTab[vertex_nr].distance
+    return min
 
 
 def Dijkstra(matrix, start, index_terminal_start):
@@ -54,21 +57,27 @@ def Dijkstra(matrix, start, index_terminal_start):
         is_terminal = False
         if vertex_nr >= index_terminal_start:
             is_terminal = True
-        vertexTab.append(Vertex(False, -1, -math.inf, is_terminal))
+        vertexTab.append(Vertex(False, -1, math.inf, is_terminal))
     # setting distance to starting vertex
     vertexTab[start].distance = 0
     u = start
     # while there is no vertex to visit left
-    while(u != -1):
+    while u != -1:
         # make actual vertex visited
         vertexTab[u].visited = True
         # for every neighbour of actual vertex do relaxation and set predecessor
         for i in range(u + 1, number_of_vertexes):
-            if (matrix[u][i] > 0 and vertexTab[u].distance + matrix[u][i] > vertexTab[i].distance):
-                vertexTab[i].distance = vertexTab[u].distance + matrix[u][i]
+            if (
+                matrix[u][i] > 0
+                and vertexTab[u].distance + matrix[u][i]
+                < vertexTab[i].distance
+            ):
+                vertexTab[i].distance = (
+                    vertexTab[u].distance + matrix[u][i]
+                )
                 vertexTab[i].pred = u
         # find next vertex in vertexTab with smallest distance or return -1 if all visited
-        u = findMax(vertexTab)
+        u = findMin(vertexTab)
     return vertexTab
 
 
@@ -81,15 +90,15 @@ def printInfo(vertexTab, values_tab):
         values_tab (list(int)): list of values of vertexes
     """
     best_paths_ends = []
-    largest_path = -math.inf
+    smallest_path = math.inf
     # search for terminal vertex(es) with smallest distance to starting vertex
     for ind, vertex in enumerate(vertexTab):
         if vertex.is_terminal:
-            if vertex.distance > largest_path:
+            if vertex.distance < smallest_path:
                 best_paths_ends.clear()
                 best_paths_ends.append(ind)
-                largest_path = vertex.distance
-            elif vertex.distance == largest_path:
+                smallest_path = vertex.distance
+            elif vertex.distance == smallest_path:
                 best_paths_ends.append(ind)
     # make list of strings representing best paths
     best_paths = []
@@ -98,7 +107,7 @@ def printInfo(vertexTab, values_tab):
     print("PATHS:")
     for path in best_paths:
         print(path)
-    print(f"SIZE: {largest_path+values_tab[0]}")
+    print(f"SIZE: {sum([int(x) for x in best_paths[0]])}")
     print("~~~~~~")
 
 
@@ -117,9 +126,9 @@ def make_path(vertexTab, values_tab, index_end):
     curr_index = index_end
     path = ""
     while vertexTab[curr_index].pred != -1:
-        path = str(values_tab[curr_index]) + path
+        path = str(mapper[values_tab[curr_index]]) + path
         curr_index = vertexTab[curr_index].pred
-    return str(values_tab[0]) + path
+    return str(mapper[values_tab[0]]) + path
 
 
 def file_to_list(file_name):
@@ -132,9 +141,11 @@ def file_to_list(file_name):
         list(int): list of values from file
     """
     ret_list = []
-    with open(file_name, 'r') as file:
+    with open(file_name, "r") as file:
         for line in file:
-            ret_list.extend([int(s) for s in line.rstrip().split() if s.isdigit()])
+            ret_list.extend(
+                [mapper[int(s)] for s in line.rstrip().split() if s.isdigit()]
+            )
     return ret_list
 
 
@@ -159,7 +170,9 @@ def make_matrix(values_tab):
     for ind, row in enumerate(matrix):
         if ind + curr_row_len < len(matrix):
             row[ind + curr_row_len] = values_tab[ind + curr_row_len]
-            row[ind + curr_row_len + 1] = values_tab[ind + curr_row_len + 1]
+            row[ind + curr_row_len + 1] = values_tab[
+                ind + curr_row_len + 1
+            ]
             counter += 1
             if counter >= curr_row_len:
                 counter = 0
@@ -187,6 +200,7 @@ def make_for_file(file_name):
 
 
 if __name__ == "__main__":
-    make_for_file("1-vv_easy.txt")
-    make_for_file("2-eeasy.txt")
-    make_for_file("3-mmedium.txt")
+    make_for_file("recruit_task/1-very_easy.txt")
+    make_for_file("recruit_task/2-easy.txt")
+    make_for_file("recruit_task/3-medium.txt")
+    # make_for_file("recruit_task/temp.txt")
