@@ -1,6 +1,7 @@
 import math
 
-mapper = {1: 9, 2: 8, 3: 7, 4: 6, 5: 5, 6:4, 7:3, 8:2, 9:1}
+mapper = {1: 9, 2: 8, 3: 7, 4: 6, 5: 5, 6: 4, 7: 3, 8: 2, 9: 1}
+
 
 class Vertex(object):
     def __init__(self, v, p, d, is_terminal):
@@ -39,6 +40,19 @@ def findMin(vertexTab):
     return min
 
 
+def get_paths(starting_vertex_ind, vertexTab, values_tab):
+    if len(vertexTab[starting_vertex_ind].pred) == 0:
+        return [str(mapper[values_tab[starting_vertex_ind]])]
+    paths = []
+    for child_ind in vertexTab[starting_vertex_ind].pred:
+        for paths_child in get_paths(child_ind, vertexTab, values_tab):
+            paths.append(
+                paths_child
+                + str(mapper[values_tab[starting_vertex_ind]])
+            )
+    return paths
+
+
 def Dijkstra(matrix, start, index_terminal_start):
     """Modified dijkstra algorithm
 
@@ -57,7 +71,7 @@ def Dijkstra(matrix, start, index_terminal_start):
         is_terminal = False
         if vertex_nr >= index_terminal_start:
             is_terminal = True
-        vertexTab.append(Vertex(False, -1, math.inf, is_terminal))
+        vertexTab.append(Vertex(False, [], math.inf, is_terminal))
     # setting distance to starting vertex
     vertexTab[start].distance = 0
     u = start
@@ -67,15 +81,21 @@ def Dijkstra(matrix, start, index_terminal_start):
         vertexTab[u].visited = True
         # for every neighbour of actual vertex do relaxation and set predecessor
         for i in range(u + 1, number_of_vertexes):
-            if (
-                matrix[u][i] > 0
-                and vertexTab[u].distance + matrix[u][i]
-                < vertexTab[i].distance
-            ):
-                vertexTab[i].distance = (
+            if matrix[u][i] > 0:
+                if (
                     vertexTab[u].distance + matrix[u][i]
-                )
-                vertexTab[i].pred = u
+                    < vertexTab[i].distance
+                ):
+                    vertexTab[i].distance = (
+                        vertexTab[u].distance + matrix[u][i]
+                    )
+                    vertexTab[i].pred = [u]
+                elif (
+                    vertexTab[u].distance + matrix[u][i]
+                    == vertexTab[i].distance
+                ):
+                    vertexTab[i].pred.append(u)
+
         # find next vertex in vertexTab with smallest distance or return -1 if all visited
         u = findMin(vertexTab)
     return vertexTab
@@ -103,10 +123,12 @@ def printInfo(vertexTab, values_tab):
     # make list of strings representing best paths
     best_paths = []
     for path_end in best_paths_ends:
-        best_paths.append(make_path(vertexTab, values_tab, path_end))
+        paths = get_paths(path_end, vertexTab, values_tab)
+        best_paths += paths
+    best_paths = list(set(best_paths))
     print("PATHS:")
-    for path in best_paths:
-        print(path)
+    for ind,path in enumerate(best_paths):
+        print(f"{ind+1}->{path}")
     print(f"SIZE: {sum([int(x) for x in best_paths[0]])}")
     print("~~~~~~")
 
@@ -125,9 +147,9 @@ def make_path(vertexTab, values_tab, index_end):
     """
     curr_index = index_end
     path = ""
-    while vertexTab[curr_index].pred != -1:
+    while len(vertexTab[curr_index].pred) != 0:
         path = str(mapper[values_tab[curr_index]]) + path
-        curr_index = vertexTab[curr_index].pred
+        curr_index = vertexTab[curr_index].pred[0]
     return str(mapper[values_tab[0]]) + path
 
 
@@ -144,7 +166,11 @@ def file_to_list(file_name):
     with open(file_name, "r") as file:
         for line in file:
             ret_list.extend(
-                [mapper[int(s)] for s in line.rstrip().split() if s.isdigit()]
+                [
+                    mapper[int(s)]
+                    for s in line.rstrip().split()
+                    if s.isdigit()
+                ]
             )
     return ret_list
 
